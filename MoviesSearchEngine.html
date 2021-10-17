@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <style>
+    body{
+      font-family: sans-serif;
+      background-color: lightsteelblue;
+    }
+    input {
+      width: 200px;
+      margin: 20px 0 0 20px;
+    }
+
+    #movies {
+      max-height: 200px;
+      width: 206px;
+      overflow: scroll;
+      border-top: none;
+      margin-left: 20px;
+    }
+    #moviesCont{
+      width: 100%;
+      display: flex;
+      overflow-x: auto;
+      margin-bottom: 50px;
+    }
+    #moviesCont >div{
+       min-width: 200px;
+       height: auto;
+       margin-right:5px;
+       background: #f6f6f7;
+    }
+    #moviesCont >div >div{
+       margin: 3%;
+       font-weight: bold;
+    }
+    label{
+      margin: 20px;
+      font-size: large;
+      font-weight: bolder;
+    }
+    #clickedMovieDetail{
+      width: auto;
+      margin: auto;
+      display: flex;
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+    #clickedMovieDetail div div{
+      line-height: 50px;
+      margin-left: 20px;
+      font-size: x-large;
+      color: rgb(77, 76, 74);
+    }
+    a{
+      margin: 30px 0 0 40%;
+      text-decoration: none;
+      color: black;
+    }
+    a:hover{
+      color: chartreuse;
+    }
+    h5{
+      margin: 5px 0 0 0;
+    }
+
+    #topCont{
+      display: flex;
+    }
+    #signIn, #signOut ,#afterSignIn{
+      margin-left: auto;
+      margin-top: 20px;
+      margin-right: 30px;
+    }
+    #afterSignIn{
+      color: blue;
+    }
+  </style>
+  <body>
+    <div id= "topCont">
+      <h2>Welcome! Search Movies You Want</h2>
+      <div id= "signIn"><button onclick="signIn()">Sign In</button></div>
+      <div id= "signOut"></div>
+    </div>
+    <h5>Click On Movie Name to get Detail</h5>
+    <a href="PopularMovies.html">Watch Popular Movies Click Here!</a>
+    <br>
+    <input oninput="debouncing(main, 1000)" type="text" id="movie" placeholder="Enter movie name" />
+   <button onclick="appendMovToCont()">Search</button>
+    <div id="movies"></div>
+ <label for="moviesCont" id="lbl"></label>
+  <div id="clickedMovieDetail"></div>
+    <div id= "moviesCont"></div>
+    
+
+    <script>
+        let movies_div = document.getElementById("movies");
+        let movies_cont = document.getElementById("moviesCont");
+        var timeout;
+
+        if(JSON.parse(localStorage.getItem("token")) == null || localStorage.getItem("token") == null)
+      {
+        
+      }
+      else{
+        let NameElement = document.getElementById("signIn");
+        let token = JSON.parse(localStorage.getItem('token'));
+        let username = JSON.parse(localStorage.getItem('userNameYoutube'));
+
+        fetch(`https://masai-api-mocker.herokuapp.com/user/${username}`,{
+            
+            headers:{
+                "content-Type":"application/json",
+
+                Authorization:`Bearer ${token}`
+            }
+        }).then((res)=>{
+
+            return res.json();
+        }).then((res) =>{
+            console.log(res);
+            var Name =  res.name;
+
+            let signOt = document.getElementById("signOut");
+            let button = document.createElement("button");
+            button.innerText = "Sign Out";
+            signOt.append(button);
+
+            button.onclick = function(){
+                signOut();
+            }
+
+            NameElement.innerHTML =""
+            NameElement.textContent ="Hello "+ Name +"!";
+            NameElement.style.background = "transparent";
+            NameElement.setAttribute("id","afterSignIn");
+        })
+      }
+
+        function appenOnDetail(movie)
+        {
+          let detail = document.getElementById("clickedMovieDetail");
+          let image = document.createElement("img")
+          let div = document.createElement("div")
+            image.src = movie.Poster;
+                   
+                   for(key in movie)
+                   {
+                     if(key !== "Poster")
+                     {
+                      let cdiv = document.createElement("div")
+                      cdiv.textContent = key+ ": "+ movie[key];
+                      div.appendChild(cdiv);
+                     }
+                   }
+                   detail.innerHTML = ""
+                 detail.append(image,div)
+        }
+         
+        async function searchMovies(movie_name)
+        {
+            try{
+
+                let res = await fetch(`http://www.omdbapi.com/?i=tt3896198&apikey=4a00954&s=${movie_name}`);
+
+                let data = await res.json();
+                return data;
+            }catch (e){
+
+                console.log("e:", e);
+            }
+        }
+
+        function appendMovies(movies){
+
+            if(movies === undefined)
+            {
+                return false;
+            }
+
+            movies.forEach(function(movie)
+            {
+              
+                let p = document.createElement('p');
+
+                p.innerText = movie.Title;
+              
+                p.onclick = function(){
+                  appenOnDetail(movie)
+                }
+                
+                movies_div.append(p);
+            })
+        }
+
+        async function main(){
+
+            movies_div.innerHTML = ""
+            let name = document.getElementById("movie").value;
+
+            let res = await searchMovies(name);
+            
+            appendMovies(res.Search)
+            console.log("res:",res)
+        }
+
+        function debouncing(func ,delay)
+        {
+           if(timeout)
+           {
+             clearTimeout(timeout);
+           }
+         timeout = setTimeout(function()
+         {
+            func();
+         },delay)
+        }
+      
+      async function appendMovToCont()
+        {
+          let name = document.getElementById("movie").value;
+          let cont = document.getElementById("moviesCont");
+          try{
+            let res = await searchMovies(name);
+          cont.innerHTML = ""
+          res.Search.forEach(function(movie)
+            {
+                let div1 = document.createElement("div");
+                let image = document.createElement('img');
+                image.src = movie.Poster;
+                image.style.width = "100%"
+                image.style.height = "200px"
+                div1.appendChild(image)
+                div1.onclick = function(){
+                  appenOnDetail(movie)
+                }
+                
+                for(key in movie)
+                {
+                   if(key !== "Poster" && key !=="imdbID")
+                   {
+                     let div = document.createElement('div');
+                     div.textContent = key+ ": "+ movie[key];
+                     div1.appendChild(div);
+                   }
+                }
+                cont.appendChild(div1);
+            })
+            if(cont.hasChildNodes())
+            {
+              let label = document.getElementById("lbl");
+              label.innerHTML =""
+              label.style.color ="green"
+              label.textContent = res.Search.length +" Results Found";
+            }
+          }
+          catch(e){
+              let label = document.getElementById("lbl");
+              label.innerHTML =""
+              label.style.color ="red"
+              label.textContent ="0 Results Found";
+          }
+        }
+  
+        function signIn()
+        {
+           window.location.href = "signUpForMovie.html"
+        }
+
+        function signOut(){
+
+            localStorage.setItem("token", null)
+            localStorage.setItem("userNameYoutube", null)
+            window.location.href ="MoviesSearchEngine.html"
+        }
+    </script>
+  </body>
+</html>
